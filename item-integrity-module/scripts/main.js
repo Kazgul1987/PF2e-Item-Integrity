@@ -1,5 +1,6 @@
 import { getMaterialValues } from './materials';
 import { ItemIntegritySheetPF2e } from './sheet';
+let pendingItemTarget = null;
 export async function applyItemDamage(item, damage) {
     if (!item?.system?.hp)
         return;
@@ -17,6 +18,8 @@ export async function applyItemDamage(item, damage) {
     const newValue = Math.max(hp.value - applied, 0);
     const isDestroyed = newValue <= 0;
     const isBroken = !isDestroyed && newValue <= (hp.brokenThreshold ?? 0);
+    const wasBroken = item.flags?.pf2e?.broken;
+    const wasDestroyed = item.flags?.pf2e?.destroyed;
     await item.update({
         'system.hp.value': newValue,
         'flags.pf2e.broken': isBroken,
@@ -25,6 +28,14 @@ export async function applyItemDamage(item, damage) {
     await ChatMessage.create({
         content: `${item.name} takes ${applied} damage (Hardness ${hardness}).`,
     });
+    if (!wasDestroyed && isDestroyed) {
+        ui.notifications?.error(`${item.name} is destroyed!`);
+        await ChatMessage.create({ content: `${item.name} is destroyed!` });
+    }
+    else if (!wasBroken && isBroken) {
+        ui.notifications?.warn(`${item.name} is broken!`);
+        await ChatMessage.create({ content: `${item.name} is broken!` });
+    }
 }
 export async function repairItem(item) {
     if (!item?.system?.hp)
@@ -76,6 +87,20 @@ Hooks.once('ready', () => {
         for (const item of actor.items.contents ?? []) {
             ensureDurability(item);
         }
+    }
+});
+Hooks.on('preItemRoll', (_item, _options) => {
+    const targets = Array.from(game.user?.targets ?? []);
+    const token = targets[0];
+    const actor = token?.actor;
+    pendingItemTarget = actor?.system?.hp ? actor : null;
+});
+Hooks.on('pf2e.damageApplied', async (...args) => {
+    const damageData = args.find((a) => typeof a === 'object' && a?.total != null);
+    const total = typeof damageData?.total === 'number' ? damageData.total : 0;
+    if (pendingItemTarget) {
+        await applyItemDamage(pendingItemTarget, total);
+        pendingItemTarget = null;
     }
 });
 Hooks.on('getActorInventoryContext', (html, options) => {

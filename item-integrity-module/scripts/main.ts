@@ -7,6 +7,9 @@ declare const Items: any;
 declare const Roll: any;
 declare const ChatMessage: any;
 declare const Dialog: any;
+declare const ui: any;
+
+let pendingItemTarget: any = null;
 
 export async function applyItemDamage(item: any, damage: number | string): Promise<void> {
   if (!item?.system?.hp) return;
@@ -26,6 +29,8 @@ export async function applyItemDamage(item: any, damage: number | string): Promi
 
   const isDestroyed = newValue <= 0;
   const isBroken = !isDestroyed && newValue <= (hp.brokenThreshold ?? 0);
+  const wasBroken = item.flags?.pf2e?.broken;
+  const wasDestroyed = item.flags?.pf2e?.destroyed;
 
   await item.update({
     'system.hp.value': newValue,
@@ -36,6 +41,14 @@ export async function applyItemDamage(item: any, damage: number | string): Promi
   await ChatMessage.create({
     content: `${item.name} takes ${applied} damage (Hardness ${hardness}).`,
   });
+
+  if (!wasDestroyed && isDestroyed) {
+    ui.notifications?.error(`${item.name} is destroyed!`);
+    await ChatMessage.create({ content: `${item.name} is destroyed!` });
+  } else if (!wasBroken && isBroken) {
+    ui.notifications?.warn(`${item.name} is broken!`);
+    await ChatMessage.create({ content: `${item.name} is broken!` });
+  }
 }
 
 export async function repairItem(item: any): Promise<void> {
@@ -98,6 +111,22 @@ Hooks.once('ready', () => {
     for (const item of actor.items.contents ?? []) {
       ensureDurability(item);
     }
+  }
+});
+
+Hooks.on('preItemRoll', (_item: any, _options: any) => {
+  const targets = Array.from(game.user?.targets ?? []) as any[];
+  const token = targets[0];
+  const actor = token?.actor;
+  pendingItemTarget = actor?.system?.hp ? actor : null;
+});
+
+Hooks.on('pf2e.damageApplied', async (...args: any[]) => {
+  const damageData = args.find((a: any) => typeof a === 'object' && a?.total != null);
+  const total = typeof damageData?.total === 'number' ? damageData.total : 0;
+  if (pendingItemTarget) {
+    await applyItemDamage(pendingItemTarget, total);
+    pendingItemTarget = null;
   }
 });
 
