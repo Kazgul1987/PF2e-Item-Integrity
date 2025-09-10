@@ -26,6 +26,19 @@ export async function applyItemDamage(item, damage) {
         content: `${item.name} takes ${applied} damage (Hardness ${hardness}).`,
     });
 }
+export async function repairItem(item) {
+    if (!item?.system?.hp)
+        return;
+    const hp = item.system.hp;
+    await item.update({
+        'system.hp.value': hp.max,
+        'flags.pf2e.broken': false,
+        'flags.pf2e.destroyed': false,
+    });
+    await ChatMessage.create({
+        content: `${item.name} is fully repaired.`,
+    });
+}
 function ensureDurability(item) {
     if (!item?.isOfType?.('physical'))
         return;
@@ -64,4 +77,51 @@ Hooks.once('ready', () => {
             ensureDurability(item);
         }
     }
+});
+Hooks.on('getActorInventoryContext', (html, options) => {
+    options.push({
+        name: 'Item Damage',
+        icon: '<i class="fa-solid fa-burst"></i>',
+        callback: (li) => {
+            const actor = game.actors.get(html.closest('.app').data('actorId'));
+            const item = actor.items.get(li.data('item-id'));
+            new Dialog({
+                title: 'Item Damage',
+                content: '<div class="form-group"><label>Damage</label><input type="text" name="damage" autofocus /></div>',
+                buttons: {
+                    ok: {
+                        icon: '<i class="fas fa-check"></i>',
+                        label: 'Apply',
+                        callback: (dialogHtml) => {
+                            const dmg = dialogHtml.find('input[name="damage"]').val();
+                            applyItemDamage(item, dmg);
+                        },
+                    },
+                    cancel: { label: 'Cancel' },
+                },
+                default: 'ok',
+            }).render(true);
+        },
+    });
+    options.push({
+        name: 'Repair Item',
+        icon: '<i class="fa-solid fa-hammer"></i>',
+        callback: (li) => {
+            const actor = game.actors.get(html.closest('.app').data('actorId'));
+            const item = actor.items.get(li.data('item-id'));
+            new Dialog({
+                title: 'Repair Item',
+                content: `<p>Repair ${item.name} to full HP?</p>`,
+                buttons: {
+                    ok: {
+                        icon: '<i class="fas fa-check"></i>',
+                        label: 'Repair',
+                        callback: () => repairItem(item),
+                    },
+                    cancel: { label: 'Cancel' },
+                },
+                default: 'ok',
+            }).render(true);
+        },
+    });
 });
