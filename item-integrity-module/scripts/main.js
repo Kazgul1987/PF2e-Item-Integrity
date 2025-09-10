@@ -1,5 +1,5 @@
-import { getMaterialValues } from './materials';
-import { ItemIntegritySheetPF2e } from './sheet';
+import { getMaterialValues } from "./materials.js";
+import { ItemIntegritySheetPF2e } from "./sheet.js";
 let pendingItemTarget = null;
 export async function applyItemDamage(item, damage) {
     if (!item?.system?.hp)
