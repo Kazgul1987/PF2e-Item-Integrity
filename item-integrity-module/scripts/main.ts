@@ -1,5 +1,5 @@
-import { getMaterialValues } from './materials';
-import { ItemIntegritySheetPF2e } from './sheet';
+import { getMaterialValues } from "./materials.js";
+import { ItemIntegritySheetPF2e } from "./sheet.js";
 
 declare const Hooks: any;
 declare const game: any;
