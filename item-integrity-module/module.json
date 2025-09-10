@@ -1,6 +1,6 @@
 {
-  "name": "pf2e-item-integrity-module",
-  "title": "PF2e Item Integrity Module",
+  "id": "pf2e-item-integrity",
+  "title": "PF2e Item Integrity",
   "description": "A Foundry VTT module template for PF2e item integrity.",
   "version": "0.1.0",
   "foundryVersion": "13",
