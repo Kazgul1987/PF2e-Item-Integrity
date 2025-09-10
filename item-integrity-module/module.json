@@ -12,7 +12,7 @@
     "scripts/main.js"
   ],
   "manifest": "https://raw.githubusercontent.com/Kazgul1987/PF2e-Item-Integrity/main/item-integrity-module/module.json",
-  "download": "https://github.com/Kazgul1987/PF2e-Item-Integrity/releases/download/v0.1.0/module.zip",
+  "download": "https://github.com/Kazgul1987/PF2e-Item-Integrity/releases/latest/download/module.zip",
   "authors": [
     {
       "name": "Kazgul1987"
