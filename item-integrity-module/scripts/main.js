@@ -1,5 +1,31 @@
 import { getMaterialValues } from './materials';
 import { ItemIntegritySheetPF2e } from './sheet';
+export async function applyItemDamage(item, damage) {
+    if (!item?.system?.hp)
+        return;
+    let rollTotal;
+    if (typeof damage === 'string') {
+        const roll = await new Roll(damage).roll({ async: true });
+        rollTotal = roll.total;
+    }
+    else {
+        rollTotal = damage;
+    }
+    const hardness = item.system.hardness ?? 0;
+    const applied = Math.max(rollTotal - hardness, 0);
+    const hp = item.system.hp;
+    const newValue = Math.max(hp.value - applied, 0);
+    const isDestroyed = newValue <= 0;
+    const isBroken = !isDestroyed && newValue <= (hp.brokenThreshold ?? 0);
+    await item.update({
+        'system.hp.value': newValue,
+        'flags.pf2e.broken': isBroken,
+        'flags.pf2e.destroyed': isDestroyed,
+    });
+    await ChatMessage.create({
+        content: `${item.name} takes ${applied} damage (Hardness ${hardness}).`,
+    });
+}
 function ensureDurability(item) {
     if (!item?.isOfType?.('physical'))
         return;
