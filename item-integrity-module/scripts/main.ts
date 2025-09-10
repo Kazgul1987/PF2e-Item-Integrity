@@ -1,7 +1,9 @@
 import { getMaterialValues } from './materials';
+import { ItemIntegritySheetPF2e } from './sheet';
 
 declare const Hooks: any;
 declare const game: any;
+declare const Items: any;
 
 function ensureDurability(item: any) {
   if (!item?.isOfType?.('physical')) return;
@@ -29,6 +31,13 @@ function ensureDurability(item: any) {
     item.update(updates);
   }
 }
+
+Hooks.once('init', () => {
+  Items.registerSheet('pf2e', ItemIntegritySheetPF2e, {
+    types: ['armor', 'consumable', 'equipment', 'treasure', 'weapon', 'backpack'],
+    makeDefault: true,
+  });
+});
 
 Hooks.once('ready', () => {
   console.log('PF2e Item Integrity module initialized.');
