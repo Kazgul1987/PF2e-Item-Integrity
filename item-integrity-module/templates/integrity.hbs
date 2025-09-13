@@ -1,14 +1,14 @@
 <section class="item-integrity">
   <h3>Integrity</h3>
   <ul>
-    <li>HP: {{system.hp.value}} / {{system.hp.max}}</li>
+    <li>HP: {{flags.pf2e-item-integrity.hp.value}} / {{flags.pf2e-item-integrity.hp.max}}</li>
     <li>Hardness: {{system.hardness}}</li>
     <li>Status: {{#if isDestroyed}}Destroyed{{else if isBroken}}Broken{{else}}Intact{{/if}}</li>
-    {{#if system.hp.brokenThreshold}}
-      <li>Broken Threshold: {{system.hp.brokenThreshold}}</li>
+    {{#if flags.pf2e-item-integrity.hp.brokenThreshold}}
+      <li>Broken Threshold: {{flags.pf2e-item-integrity.hp.brokenThreshold}}</li>
     {{/if}}
-    {{#if system.hp.repairStatus}}
-      <li>Repair Status: {{system.hp.repairStatus}}</li>
+    {{#if flags.pf2e-item-integrity.hp.repairStatus}}
+      <li>Repair Status: {{flags.pf2e-item-integrity.hp.repairStatus}}</li>
     {{/if}}
   </ul>
 </section>
