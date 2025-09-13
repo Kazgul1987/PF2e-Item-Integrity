@@ -2,7 +2,8 @@ import { getMaterialValues } from "./materials.js";
 import { ItemIntegritySheetPF2e } from "./sheet.js";
 let pendingItemTarget = null;
 export async function applyItemDamage(item, damage) {
-    if (!item?.system?.hp)
+    const hp = item.flags?.['pf2e-item-integrity']?.hp;
+    if (!hp)
         return;
     let rollTotal;
     if (typeof damage === 'string') {
@@ -14,14 +15,13 @@ export async function applyItemDamage(item, damage) {
     }
     const hardness = item.system.hardness ?? 0;
     const applied = Math.max(rollTotal - hardness, 0);
-    const hp = item.system.hp;
     const newValue = Math.max(hp.value - applied, 0);
     const isDestroyed = newValue <= 0;
     const isBroken = !isDestroyed && newValue <= (hp.brokenThreshold ?? 0);
     const wasBroken = item.flags?.pf2e?.broken;
     const wasDestroyed = item.flags?.pf2e?.destroyed;
     await item.update({
-        'system.hp.value': newValue,
+        'flags.pf2e-item-integrity.hp.value': newValue,
         'flags.pf2e.broken': isBroken,
         'flags.pf2e.destroyed': isDestroyed,
     });
@@ -38,11 +38,11 @@ export async function applyItemDamage(item, damage) {
     }
 }
 export async function repairItem(item) {
-    if (!item?.system?.hp)
+    const hp = item.flags?.['pf2e-item-integrity']?.hp;
+    if (!hp)
         return;
-    const hp = item.system.hp;
     await item.update({
-        'system.hp.value': hp.max,
+        'flags.pf2e-item-integrity.hp.value': hp.max,
         'flags.pf2e.broken': false,
         'flags.pf2e.destroyed': false,
     });
@@ -57,9 +57,9 @@ function ensureDurability(item) {
     // Derive material-based defaults
     const materialType = item.system?.material?.type ?? null;
     const materialValues = getMaterialValues(materialType);
-    const hp = item.system?.hp;
+    const hp = item.flags?.['pf2e-item-integrity']?.hp;
     if (!hp || hp.max == null) {
-        updates['system.hp'] = {
+        updates['flags.pf2e-item-integrity.hp'] = {
             value: materialValues.hp,
             max: materialValues.hp,
             brokenThreshold: Math.floor(materialValues.hp / 2),
@@ -93,7 +93,8 @@ Hooks.on('preItemRoll', (_item, _options) => {
     const targets = Array.from(game.user?.targets ?? []);
     const token = targets[0];
     const actor = token?.actor;
-    pendingItemTarget = actor?.system?.hp ? actor : null;
+    const hasHp = actor?.flags?.['pf2e-item-integrity']?.hp;
+    pendingItemTarget = hasHp ? actor : null;
 });
 Hooks.on('pf2e.damageApplied', async (...args) => {
     const damageData = args.find((a) => typeof a === 'object' && a?.total != null);

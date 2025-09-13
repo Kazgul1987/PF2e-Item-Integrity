@@ -12,7 +12,8 @@ declare const ui: any;
 let pendingItemTarget: any = null;
 
 export async function applyItemDamage(item: any, damage: number | string): Promise<void> {
-  if (!item?.system?.hp) return;
+  const hp = item.flags?.['pf2e-item-integrity']?.hp;
+  if (!hp) return;
 
   let rollTotal: number;
   if (typeof damage === 'string') {
@@ -24,7 +25,6 @@ export async function applyItemDamage(item: any, damage: number | string): Promi
 
   const hardness = item.system.hardness ?? 0;
   const applied = Math.max(rollTotal - hardness, 0);
-  const hp = item.system.hp;
   const newValue = Math.max(hp.value - applied, 0);
 
   const isDestroyed = newValue <= 0;
@@ -33,7 +33,7 @@ export async function applyItemDamage(item: any, damage: number | string): Promi
   const wasDestroyed = item.flags?.pf2e?.destroyed;
 
   await item.update({
-    'system.hp.value': newValue,
+    'flags.pf2e-item-integrity.hp.value': newValue,
     'flags.pf2e.broken': isBroken,
     'flags.pf2e.destroyed': isDestroyed,
   });
@@ -52,11 +52,11 @@ export async function applyItemDamage(item: any, damage: number | string): Promi
 }
 
 export async function repairItem(item: any): Promise<void> {
-  if (!item?.system?.hp) return;
+  const hp = item.flags?.['pf2e-item-integrity']?.hp;
+  if (!hp) return;
 
-  const hp = item.system.hp;
   await item.update({
-    'system.hp.value': hp.max,
+    'flags.pf2e-item-integrity.hp.value': hp.max,
     'flags.pf2e.broken': false,
     'flags.pf2e.destroyed': false,
   });
@@ -75,9 +75,9 @@ function ensureDurability(item: any) {
   const materialType = item.system?.material?.type ?? null;
   const materialValues = getMaterialValues(materialType);
 
-  const hp = item.system?.hp;
+  const hp = item.flags?.['pf2e-item-integrity']?.hp;
   if (!hp || hp.max == null) {
-    updates['system.hp'] = {
+    updates['flags.pf2e-item-integrity.hp'] = {
       value: materialValues.hp,
       max: materialValues.hp,
       brokenThreshold: Math.floor(materialValues.hp / 2),
@@ -118,7 +118,8 @@ Hooks.on('preItemRoll', (_item: any, _options: any) => {
   const targets = Array.from(game.user?.targets ?? []) as any[];
   const token = targets[0];
   const actor = token?.actor;
-  pendingItemTarget = actor?.system?.hp ? actor : null;
+  const hasHp = actor?.flags?.['pf2e-item-integrity']?.hp;
+  pendingItemTarget = hasHp ? actor : null;
 });
 
 Hooks.on('pf2e.damageApplied', async (...args: any[]) => {
